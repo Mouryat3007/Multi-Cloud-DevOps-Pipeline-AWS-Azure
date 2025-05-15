@@ -18,7 +18,7 @@ data "aws_subnets" "default" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "18.29.0"  # specify exact working version
+  version = "17.24.0"  # specify exact working version
 
   cluster_name    = var.cluster_name
   cluster_version = "1.29"
