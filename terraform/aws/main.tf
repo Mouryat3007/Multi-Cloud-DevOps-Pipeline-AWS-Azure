@@ -17,14 +17,16 @@ data "aws_subnets" "default" {
 }
 
 module "eks" {
-  source          = "terraform-aws-modules/eks/aws"
+  source  = "terraform-aws-modules/eks/aws"
+  version = "18.29.0"  # specify exact working version
+
   cluster_name    = var.cluster_name
   cluster_version = "1.29"
 
-  vpc_id  = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default[0].id
-  subnets = length(var.subnets) > 0 ? var.subnets : data.aws_subnets.default[0].ids
+  vpc_id     = var.vpc_id != "" ? var.vpc_id : data.aws_vpc.default[0].id
+  subnet_ids = length(var.subnets) > 0 ? var.subnets : data.aws_subnets.default[0].ids
 
-  manage_aws_auth = true
+  # AWS Auth is managed automatically now, no manage_aws_auth param needed
 
   node_groups = {
     default = {
