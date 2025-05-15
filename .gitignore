@@ -1,0 +1,23 @@
+multi-cloud-devops-pipeline/.gitignore
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# Environment and secrets
+.env
+*.env
+*.secrets
+
+# Kubernetes config
+kubeconfig*
+
+# Logs
+*.log
+
+# OS / IDE junk
+.DS_Store
+__pycache__/
+.idea/
+.vscode/
+node_modules/
