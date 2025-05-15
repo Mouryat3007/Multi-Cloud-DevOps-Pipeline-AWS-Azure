@@ -1,8 +1,10 @@
 #!/bin/bash
-
 set -e
 
 echo "Initializing Terraform for AWS..."
+
+# Move to the terraform directory where the .tf files are
+cd "$(dirname "$0")"
 
 terraform init
 
