@@ -2,12 +2,7 @@ pipeline {
   agent any
 
   environment {
-    AWS_REGION = 'us-east-1'
-    CLUSTER_NAME = 'my-eks-cluster'
-    ECR_ACCOUNT_ID = credentials('aws-account-id')
-    AZURE_CREDENTIALS = credentials('azure-service-principal')
-    DOCKER_USERNAME = credentials('docker-username')
-    DOCKER_PASSWORD = credentials('docker-password')
+    AWS_DEFAULT_REGION = 'us-east-1'  // Set your AWS region here or pass as param
   }
 
   parameters {
@@ -15,25 +10,41 @@ pipeline {
   }
 
   stages {
-    stage('Checkout') {
+    stage('Clean Workspace') {
+      steps {
+        cleanWs() // Clean the workspace to avoid caching old Terraform state or modules
+      }
+    }
+
+    stage('Checkout SCM') {
       steps {
         checkout scm
       }
     }
 
     stage('Provision Infrastructure') {
-  steps {
-    script {
-      if (params.TARGET_CLOUD == 'aws') {
-        dir('terraform/aws') {
-          sh './init-and-apply.sh'
-        }
-        sh 'aws eks update-kubeconfig --region us-east-1 --name my-eks-cluster'
-      } else {
-        dir('terraform/azure') {
-          sh './init-and-apply.sh'
-        }
-        sh 'az aks get-credentials --resource-group myResourceGroup --name my-aks-cluster'
+      steps {
+        script {
+          if (params.TARGET_CLOUD == 'aws') {
+            dir('terraform/aws') {
+              sh '''
+                terraform init -upgrade
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan
+              '''
+              sh 'aws eks update-kubeconfig --region $AWS_DEFAULT_REGION --name my-eks-cluster'
+            }
+          } else if (params.TARGET_CLOUD == 'azure') {
+            dir('terraform/azure') {
+              sh '''
+                terraform init -upgrade
+                terraform plan -out=tfplan
+                terraform apply -auto-approve tfplan
+              '''
+              sh 'az aks get-credentials --resource-group myResourceGroup --name my-aks-cluster'
+            }
+          } else {
+            error "Unsupported TARGET_CLOUD: ${params.TARGET_CLOUD}"
           }
         }
       }
