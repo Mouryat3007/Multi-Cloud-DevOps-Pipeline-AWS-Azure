@@ -3,6 +3,7 @@ pipeline {
 
   environment {
     AWS_REGION = 'us-east-1'
+    CLUSTER_NAME = 'my-eks-cluster'
     ECR_ACCOUNT_ID = credentials('aws-account-id')
     AZURE_CREDENTIALS = credentials('azure-service-principal')
     DOCKER_USERNAME = credentials('docker-username')
