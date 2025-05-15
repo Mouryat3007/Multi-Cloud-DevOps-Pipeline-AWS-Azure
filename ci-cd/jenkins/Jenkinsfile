@@ -2,12 +2,15 @@ pipeline {
   agent any
 
   environment {
-    AWS_ACCESS_KEY_ID = credentials('aws-access-key')
-    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
-    AZURE_CLIENT_ID = credentials('azure-client-id')
-    AZURE_CLIENT_SECRET = credentials('azure-client-secret')
-    AZURE_TENANT_ID = credentials('azure-tenant-id')
-    AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
+    AWS_REGION = 'us-east-1'
+    ECR_ACCOUNT_ID = credentials('aws-account-id')
+    AZURE_CREDENTIALS = credentials('azure-service-principal')
+    DOCKER_USERNAME = credentials('docker-username')
+    DOCKER_PASSWORD = credentials('docker-password')
+  }
+
+  parameters {
+    choice(name: 'TARGET_CLOUD', choices: ['aws', 'azure'], description: 'Choose cloud provider')
   }
 
   stages {
@@ -17,35 +20,33 @@ pipeline {
       }
     }
 
-    stage('Build Docker Images') {
+    stage('Build & Push Docker Images') {
       steps {
-        sh 'docker build -t service-a ./docker/service-a'
-        sh 'docker build -t service-b ./docker/service-b'
+        script {
+          if (params.TARGET_CLOUD == 'aws') {
+            sh './scripts/build-and-push-ecr.sh'
+          } else {
+            sh './scripts/build-and-push-acr.sh'
+          }
+        }
       }
     }
 
-    stage('Push to AWS ECR') {
+    stage('Deploy to Kubernetes') {
       steps {
-        sh './scripts/build-and-push-ecr.sh'
+        script {
+          sh "./scripts/deploy-k8s.sh ${params.TARGET_CLOUD}"
+        }
       }
     }
+  }
 
-    stage('Push to Azure ACR') {
-      steps {
-        sh './scripts/build-and-push-acr.sh'
-      }
+  post {
+    success {
+      echo '✅ Pipeline completed successfully!'
     }
-
-    stage('Deploy to AWS EKS') {
-      steps {
-        sh 'kubectl apply -f ./k8s/aws/'
-      }
-    }
-
-    stage('Deploy to Azure AKS') {
-      steps {
-        sh 'kubectl apply -f ./k8s/azure/'
-      }
+    failure {
+      echo '❌ Pipeline failed! Please check the logs.'
     }
   }
 }
