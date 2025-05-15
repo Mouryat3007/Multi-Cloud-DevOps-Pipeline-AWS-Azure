@@ -1,0 +1,51 @@
+pipeline {
+  agent any
+
+  environment {
+    AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+    AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+    AZURE_CLIENT_ID = credentials('azure-client-id')
+    AZURE_CLIENT_SECRET = credentials('azure-client-secret')
+    AZURE_TENANT_ID = credentials('azure-tenant-id')
+    AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build Docker Images') {
+      steps {
+        sh 'docker build -t service-a ./docker/service-a'
+        sh 'docker build -t service-b ./docker/service-b'
+      }
+    }
+
+    stage('Push to AWS ECR') {
+      steps {
+        sh './scripts/build-and-push-ecr.sh'
+      }
+    }
+
+    stage('Push to Azure ACR') {
+      steps {
+        sh './scripts/build-and-push-acr.sh'
+      }
+    }
+
+    stage('Deploy to AWS EKS') {
+      steps {
+        sh 'kubectl apply -f ./k8s/aws/'
+      }
+    }
+
+    stage('Deploy to Azure AKS') {
+      steps {
+        sh 'kubectl apply -f ./k8s/azure/'
+      }
+    }
+  }
+}
