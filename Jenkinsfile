@@ -22,14 +22,18 @@ pipeline {
     }
 
     stage('Provision Infrastructure') {
-      steps {
-        script {
-          if (params.TARGET_CLOUD == 'aws') {
-            sh './terraform/aws/init-and-apply.sh'
-            sh 'aws eks update-kubeconfig --region us-east-1 --name my-eks-cluster'
-          } else {
-            sh './terraform/azure/init-and-apply.sh'
-            sh 'az aks get-credentials --resource-group myResourceGroup --name my-aks-cluster'
+  steps {
+    script {
+      if (params.TARGET_CLOUD == 'aws') {
+        dir('terraform/aws') {
+          sh './init-and-apply.sh'
+        }
+        sh 'aws eks update-kubeconfig --region us-east-1 --name my-eks-cluster'
+      } else {
+        dir('terraform/azure') {
+          sh './init-and-apply.sh'
+        }
+        sh 'az aks get-credentials --resource-group myResourceGroup --name my-aks-cluster'
           }
         }
       }
